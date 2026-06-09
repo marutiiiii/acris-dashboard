@@ -1,89 +1,110 @@
-# ReguFlow AI — Frontend Completion Plan
 
-Frontend-only. No backend, APIs, DBs, auth, AI, OCR, or PDF parsing. All behavior driven by React state + centralized mock data + simulated workflows. Persist user prefs (theme, copilot mode) in `localStorage`.
+# ReguFlow AI — Frontend Polish Pass
 
-## Cross-cutting foundations (built once, used by every phase)
+A frontend-only refinement to sharpen storytelling, demo impact, and enterprise feel. No backend, no new workflows, no redesign — additive polish on existing pages and shared components.
 
-- **Rebrand to ReguFlow AI** across `index.html`, `Sidebar`, `TopBar`, route titles, favicon text.
-- **Design system reset** (`src/index.css`, `tailwind.config.ts`):
-  - Remove `* { border-radius: 0 !important }` override; set `--radius: 6px` (buttons/inputs 4px via component classes).
-  - Tokens: primary `#1E40AF`, secondary slate `#475569/#64748B`, success `#16A34A`, warning `#D97706`, error `#DC2626`, info `#2563EB`, light bg `#F8FAFC`, dark bg `#0F172A`. Full HSL token set for both `:root` and `.dark`.
-  - Typography: Inter via Google Fonts; H1 28–32, H2 20–24, card 16–18, body 14–16, label 12–14.
-  - Spacing: restrict to 8/16/24/32/48/64 grid in utilities; shadows limited to `shadow-sm`/`shadow-md`.
-  - Animations: 200/250/300ms transitions; no flashy motion.
-- **Dark mode**: add `ThemeProvider` (class strategy on `<html>`), toggle in TopBar, persist in `localStorage`.
-- **Centralized mock data**: `src/mocks/index.ts` exporting `regulations`, `maps`, `audits`, `departments`, `clauses`, `reports`, `alerts`, `conversations`, `users`. Every page imports from here.
-- **Shared UI primitives**: `PageHeader`, `KpiCard`, `DataTable`, `StatusBadge`, `RiskBadge`, `EmptyState`, `LoadingState`, `ErrorState`, `Drawer` wrapper, `SeverityPill`.
-- **Adaptive Copilot context** (`src/state/CopilotContext.tsx`): `mode: 'beginner' | 'intermediate' | 'expert'`, persisted; pages read from it to toggle density, tooltips, guidance.
+## 1. New shared components
 
-## Phase 1 — Audit & standardization
-- Sweep all existing pages; standardize: page header, section spacing, table styles (`DataTable`), card styles, badge colors.
-- Add Loading/Empty/Error states to every data view.
-- Fix sidebar active state, broken links, responsive collapse, dark-mode contrast.
-- Replace bespoke risk colors with tokens.
+Reusable, enterprise-styled, used across pages.
 
-## Phase 2 — Regulatory Intelligence Center (`/regulations`)
-- Source cards row: RBI, SEBI, NPCI, CERT-In, Internal Policies (latest update, risk, active count, status).
-- Enterprise feed `DataTable`: ID, Title, Source, Published, Risk Score, Status, Impacted Depts; sort + filter + search.
-- Row click → right-side `RegulationDrawer`: Executive Summary, Key Obligations, Risk Assessment, Affected Departments, Suggested Actions, Related Regulations.
+- `src/components/shared/JourneyTracker.tsx` — horizontal 6-step Regulation → Action → Proof workflow with status, count, progress; variants: `dashboard` (full) and `compact` (timeline).
+- `src/components/shared/FocusTodayCard.tsx` — featured "Today's Compliance Priority" card with risk, modified clauses, affected departments, recommended action, CTA.
+- `src/components/shared/ModeBanner.tsx` — slim banner under TopBar showing active Copilot mode + enabled features; animated swap (200–300ms fade) on mode change.
+- `src/components/shared/TrendIndicator.tsx` — `↑6%` / `↓3%` pill with semantic color (success/danger/muted).
+- `src/components/shared/EnhancedKpiCard.tsx` — extends current `KpiCard` with optional sub-metrics row + mini progress bar + trend indicator (keeps original `KpiCard` untouched as base).
+- `src/components/shared/InsightCard.tsx` — AI-style executive insight card (icon + headline + body + severity stripe).
+- `src/components/shared/StatusPipeline.tsx` — horizontal status bar (Pending → Assigned → In Progress → Review → Completed) with counts; used in MAPs and Document Analysis.
+- `src/components/shared/Skeleton.tsx` extensions — table-row, card, chart skeletons for consistent loading.
 
-## Phase 3 — Document Analysis Workspace (`/document-analysis`, new route)
-- Drag-and-drop zone (accepts PDF/DOCX visually; no parsing), file list, upload history.
-- Simulated pipeline with animated stage tracker: Uploading → Extracting Clauses → Comparing Versions → Impact Analysis → Generating MAPs → Preparing Report (setTimeout-driven).
-- Results panel: Added/Removed/Modified clause cards (id, severity, dept impact, summary, confidence).
+## 2. Page-level changes (additive only)
 
-## Phase 4 — Clause Change Detection (`/change-detection`)
-- Side-by-side old vs new regulation viewer; inline highlights (added green, removed red, modified amber via tokens).
-- Toolbar: search, severity filter, department filter, clause filter.
-- Summary strip: total changes, high-risk changes, impacted depts, audit exposure.
+### Dashboard (`src/pages/Dashboard.tsx`)
+1. Insert `JourneyTracker` directly below `PageHeader`.
+2. Replace existing "high priority" strip with `FocusTodayCard` (keeps strip data, richer layout).
+3. Swap 4 of the 6 KPI cards to `EnhancedKpiCard`:
+   - Compliance Health → score + trend + previous month + target + mini bar
+   - Audit Readiness → % + open findings + missing evidence + controls verified
+   - Active Regulations → total + new this week + high-risk count
+   - Pending MAPs → pending + overdue + assigned + completed
+4. Add **Recent Regulation Activity** table section (mock data already in `regulations` mock; render change type + status columns).
+5. Add **Compliance Timeline** section using `JourneyTracker` compact variant with mock timestamps.
+6. Convert "Executive insights" block to use `InsightCard` grid with trend indicators.
+7. Chart polish: add hover tooltips with units, legends, `TrendIndicator` next to chart titles.
 
-## Phase 5 — Impact Analysis (`/impact-analysis`)
-- Department impact matrix table (Compliance, Legal, Operations, IT, Cybersecurity, Audit): Impact Score, Risk, Priority, Recommended Action.
-- Risk distribution chart (recharts) Low/Med/High.
-- Business impact cards: Operational, Financial, Regulatory, Audit Readiness.
+### TopBar / Layout
+- Mount `ModeBanner` in `src/components/Layout.tsx` between `TopBar` and `<main>`. Banner content reads from `CopilotContext`; fades on change.
 
-## Phase 6 — AI Compliance Copilot (`/copilot`, rework of AI Explanation)
-- Chat shell with preloaded mock conversations; user types → canned response from mock map.
-- Quick-action buttons: Explain Simply, Explain Technically, Generate MAPs, Summarize Changes, Show Impact, Generate Audit Report.
-- Right-side Citation Panel: clause references, confidence, traceability.
+### CopilotContext (`src/state/CopilotContext.tsx`)
+- No API change. Add a small `useCopilotFeatures()` helper returning the feature list per mode (used by `ModeBanner` and Beginner/Expert affordances).
 
-## Phase 7 — Measurable Action Points (`/maps`, new route)
-- KPI strip: Total, Pending, Assigned, In Progress, Completed, Overdue.
-- Kanban board (5 columns) with drag-and-drop via `@dnd-kit/core` (already-allowed lib; add if missing). Cards: name, owner, deadline, severity, dept.
-- Task drawer: description, related regulation, impact, owner, deadline, evidence required.
+### Beginner / Expert affordances
+- Beginner: render existing `BeginnerHint` callouts on Regulations, MAPs, Document Analysis, Audit Readiness with onboarding copy + recommended next action.
+- Expert: tighter row padding on `data-table` (via `data-copilot-mode="expert"` selector in `index.css`), show keyboard shortcut hints (`⌘K`, `J/K`) in TopBar and table footers, show bulk-action toolbar shell on tables.
+- Transition: 200ms CSS fade on body `[data-copilot-mode]` change via existing utility.
 
-## Phase 8 — Audit Readiness Center (`/audit-readiness`, new route)
-- Large circular health score (92%).
-- Department readiness bars.
-- Interactive vertical audit timeline.
-- Findings cards: Open, Critical, Closed, Missing Evidence.
-- Executive audit summary block.
+### Document Analysis (`src/pages/DocumentAnalysis.tsx`)
+- Upgrade dropzone: explicit drag/hover/success states, document icon, file metadata.
+- Replace pipeline stages with `StatusPipeline` + per-stage shimmer while active.
+- Add **Results Summary** card (added / removed / modified clauses, affected departments, risk score) at top of results.
 
-## Phase 9 — Report Generation (`/reports`)
-- Report type cards: Executive, Compliance, Risk, Department, Audit.
-- Preview pane with print-styled layout; Print (window.print), Export (toast simulation), Share (modal simulation).
+### Change Detection (`src/pages/ChangeDetection.tsx`)
+- Add **Executive Summary Banner** (changes detected, high risk, affected depts, audit exposure).
+- Tune diff colors via existing tokens: added = `success/10` bg, modified = `warning/10`, removed = `destructive/10`.
+- Make existing summary panel `sticky top-4` on `lg:` viewports.
 
-## Phase 10 — Adaptive Compliance Copilot mode
-- User profile widget in TopBar: name, role, dept, expertise score, mode selector (Beginner / Intermediate / Expert).
-- Beginner: visible tooltips, expanded explanation blocks, simplified tables (fewer columns), guided action banners, expanded assistant panel.
-- Expert: dense tables (all columns), bulk-select, quick filters, keyboard shortcuts (`g d`, `g r`, etc. via `useHotkeys`), compact spacing, minimized assistant.
-- Mode change instantly re-renders affected pages; persisted in `localStorage`.
+### MAPs / Kanban (`src/pages/Maps.tsx`)
+- Add `StatusPipeline` above the board.
+- Card polish: severity left border (4px), hover elevation (shadow-md), 200ms transitions on drag-over column.
+- Add severity legend chip row.
 
-## Phase 11 — Executive Dashboard (`/`)
-- KPI cards: Compliance Health, Active Regulations, Pending MAPs, High-Risk Alerts, Audit Readiness, Department Exposure.
-- Charts: Compliance Trend (line), Risk Distribution (donut), Department Readiness (bar), MAP Progress (stacked bar).
-- "Executive Insights" AI-style mock insight cards.
+### Audit Readiness (`src/pages/AuditReadiness.tsx`)
+- Enlarge readiness ring (existing) and add "Audit Ready" label + delta.
+- Add **Department Ranking** sorted list (uses existing `audits` mock).
+- Add **Findings Heatmap** (simple CSS grid colored by severity counts).
+- Add **Executive Summary** text block above timeline.
 
-## Phase 12 — Demo polish
-- Final pass focused on: Adaptive Copilot, PDF upload sim, Clause comparison, MAP Kanban, Audit Readiness.
-- Verify end-to-end demo flow (Dashboard → mode switch → upload → processing → changes → impact → MAPs → kanban → audit → report).
-- Responsive QA at 1280/1024/768; dark/light QA.
+### All pages — micro UX
+- Use shared `Skeleton` variants in initial render states.
+- Standardize hover (`hover:bg-muted/50`), focus rings (`focus-visible:ring-1`), section spacing (`space-y-6`).
 
-## Technical notes
-- Routes added: `/document-analysis`, `/copilot` (replaces `/ai-explanation` or aliases it), `/maps`, `/audit-readiness`. Sidebar regrouped: Intelligence / Analysis / Actions / Governance.
-- New deps: `@dnd-kit/core`, `@dnd-kit/sortable`, `react-hotkeys-hook`, `next-themes` (or hand-rolled provider).
-- File layout additions: `src/mocks/`, `src/state/`, `src/components/shared/`, new pages under `src/pages/`.
-- Execution order is strictly Phase 1 → 12; each phase delivered as a discrete build turn so we can verify before moving on.
+## 3. Mocks (`src/mocks/index.ts`)
 
-## Out of scope
-Backend, APIs, DBs, auth, real AI/OCR/PDF/scraping/RAG/vector/ML, cloud services. All workflows are simulated in the client.
+Additive only; no changes to existing keys.
+- `journeySteps` — 6 steps with `{label, count, status, progress}`.
+- `focusToday` — single object for the focus card.
+- `kpiDetails` — sub-metrics for the 4 enhanced KPIs.
+- `recentActivity` — derived view of regulations with `changeType` and `status`.
+- `complianceTimeline` — 5–6 timestamped events.
+- `executiveInsights` — 3–4 narrative insights with severity + trend.
+- `findingsHeatmap` — department × severity counts.
+- `copilotFeatures` — feature lists per mode.
+
+## 4. Styling
+
+Inside existing tokens — no new color system.
+- Add utility classes in `src/index.css`: `.pipeline-step`, `.mode-banner`, `.insight-card`, `[data-copilot-mode="expert"] .data-table td { @apply py-1.5; }`, `[data-copilot-mode="expert"] .data-table th { @apply py-1.5; }`.
+- Use existing `animate-fade-in` for mode transitions; no new keyframes.
+
+## 5. Responsive sweep
+
+Manual pass via preview at 1366, 1024, 768, 414:
+- Sidebar collapses (existing behavior verified).
+- Tables: `overflow-x-auto` wrappers on Dashboard, Regulations, AuditLogs, Reports.
+- Kanban: horizontal scroll on `<lg`.
+- Charts: `ResponsiveContainer` already in use; verify heights.
+- Drawers: full-width on mobile.
+
+## 6. Out of scope (explicit)
+
+- No new routes, no backend, no APIs, no auth, no AI calls.
+- No redesign of color system, no border-radius/shadow overhaul beyond existing tokens.
+- No rewrite of existing page logic — purely additive composition with new shared components.
+
+## Execution order
+
+1. Shared components + mocks (parallel writes).
+2. Layout + TopBar + ModeBanner + Copilot mode CSS.
+3. Dashboard (largest impact).
+4. Document Analysis, Change Detection, MAPs, Audit Readiness.
+5. Responsive + skeleton/empty/error state sweep across remaining pages.
+6. Preview verification at desktop + tablet + mobile widths.

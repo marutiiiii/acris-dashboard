@@ -124,6 +124,18 @@
   .data-table td {
     @apply px-4 py-2.5;
   }
+  [data-copilot-mode="expert"] .data-table th,
+  [data-copilot-mode="expert"] .data-table td {
+    @apply py-1.5 text-[13px];
+  }
+  [data-copilot-mode="expert"] .kpi-card {
+    @apply p-3;
+  }
+  [data-copilot-mode="beginner"] .data-table th,
+  [data-copilot-mode="beginner"] .data-table td {
+    @apply py-3;
+  }
+  .mode-banner { transition: background-color 250ms ease, color 250ms ease; }
 }
 
 @media print {
