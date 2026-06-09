@@ -32,3 +32,11 @@ export function useCopilot() {
 
 export const useIsBeginner = () => useCopilot().mode === "beginner";
 export const useIsExpert = () => useCopilot().mode === "expert";
+
+const FEATURES: Record<CopilotMode, string[]> = {
+  beginner: ["Guided tooltips", "Plain-language summaries", "Recommended next actions", "Onboarding hints"],
+  intermediate: ["Advanced filters", "AI assistance", "Faster navigation", "Department insights"],
+  expert: ["Dense tables", "Bulk actions", "Keyboard shortcuts", "Raw clause access"],
+};
+
+export const useCopilotFeatures = () => FEATURES[useCopilot().mode];
