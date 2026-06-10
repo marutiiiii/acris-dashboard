@@ -14,7 +14,265 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_history: {
+        Row: {
+          citations_json: Json | null
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          citations_json?: Json | null
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          citations_json?: Json | null
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      clauses: {
+        Row: {
+          category: string | null
+          clause_id: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+          obligation: string | null
+          severity: string | null
+          text: string
+        }
+        Insert: {
+          category?: string | null
+          clause_id: string
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          id?: string
+          obligation?: string | null
+          severity?: string | null
+          text: string
+        }
+        Update: {
+          category?: string | null
+          clause_id?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          id?: string
+          obligation?: string | null
+          severity?: string | null
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clauses_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comparisons: {
+        Row: {
+          created_at: string
+          id: string
+          new_document_id: string
+          old_document_id: string
+          result_json: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_document_id: string
+          old_document_id: string
+          result_json?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_document_id?: string
+          old_document_id?: string
+          result_json?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparisons_new_document_id_fkey"
+            columns: ["new_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comparisons_old_document_id_fkey"
+            columns: ["old_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_path: string
+          id: string
+          pages: number | null
+          source: string | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_path: string
+          id?: string
+          pages?: number | null
+          source?: string | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_path?: string
+          id?: string
+          pages?: number | null
+          source?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      maps: {
+        Row: {
+          clause_ref: string | null
+          comparison_id: string | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          id: string
+          owner: string | null
+          severity: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          clause_ref?: string | null
+          comparison_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          owner?: string | null
+          severity?: string
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          clause_ref?: string | null
+          comparison_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          owner?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maps_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: false
+            referencedRelation: "comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulations: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          link: string | null
+          source: string
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          link?: string | null
+          source: string
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          link?: string | null
+          source?: string
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          title: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          title?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          title?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
