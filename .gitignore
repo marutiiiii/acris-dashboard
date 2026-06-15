@@ -1,4 +1,18 @@
-# Logs
+# Frontend ignores
+acris-dashboard/node_modules/
+acris-dashboard/dist/
+acris-dashboard/dist-ssr/
+acris-dashboard/*.local
+acris-dashboard/.env
+
+# Backend ignores
+**/__pycache__/
+**/*.pyc
+backend/app.db
+backend/storage/
+backend/.env
+
+# General ignores
 logs
 *.log
 npm-debug.log*
@@ -7,12 +21,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
