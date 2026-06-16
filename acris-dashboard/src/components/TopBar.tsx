@@ -75,56 +75,71 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-14 border-b bg-card flex items-center justify-between px-6 flex-shrink-0">
-      <div className="flex items-center gap-2 text-muted-foreground border border-border rounded-md px-3 h-9 w-80">
-        <Search className="h-4 w-4" />
+    <header className="h-14 border-b border-slate-800/40 bg-[#070d1e] flex items-center justify-between px-6 flex-shrink-0 select-none">
+      {/* Search Input */}
+      <div className="flex items-center gap-2.5 text-slate-400 bg-[#0c142b]/60 border border-slate-800/40 rounded-lg px-3 h-9 w-80">
+        <Search className="h-4 w-4 text-slate-400" />
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search regulations..."
-          className="border-0 bg-transparent text-sm flex-1 placeholder:text-muted-foreground/60 focus:outline-none"
+          placeholder="Search regulations, MAPs, documents..."
+          className="border-0 bg-transparent text-xs flex-1 placeholder:text-slate-500/80 focus:outline-none text-white"
           value={searchValue}
           onChange={(e) => handleSearchChange(e.target.value)}
           onFocus={handleSearchFocus}
         />
-        <kbd className="hidden sm:inline text-[10px] text-muted-foreground/60 border border-border px-1 rounded">⌘K</kbd>
+        <kbd className="hidden sm:inline text-[9px] font-bold text-slate-500/80 border border-slate-800/50 px-1.5 py-0.5 rounded bg-slate-900">⌘K</kbd>
       </div>
-      <div className="flex items-center gap-4 text-sm">
-        <div className="flex items-center gap-1 border border-border rounded-md p-0.5">
+
+      {/* Right controls */}
+      <div className="flex items-center gap-4 text-xs">
+        {/* Mode Toggler */}
+        <div className="flex items-center gap-0.5 bg-[#0c142b]/80 border border-slate-800/40 rounded-lg p-0.5">
           {MODES.map((m) => (
             <button
               key={m.value}
               onClick={() => setMode(m.value)}
-              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+              className={`px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all ${
                 mode === m.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/15"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               {m.label}
             </button>
           ))}
         </div>
-        <button onClick={toggle} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors" title="Toggle theme">
+
+        {/* Theme Toggle */}
+        <button 
+          onClick={toggle} 
+          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg border border-transparent hover:border-slate-800/40 transition-all" 
+          title="Toggle theme"
+        >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
-        <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors">
+
+        {/* Notification Bell */}
+        <button className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg border border-transparent hover:border-slate-800/40 transition-all">
           <Bell className="h-4 w-4" />
-          <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center rounded-full">3</span>
+          <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center rounded-full">3</span>
         </button>
-        <div className="w-px h-6 bg-border" />
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="w-8 h-8 bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold rounded">
+
+        <div className="w-px h-6 bg-slate-800/40" />
+
+        {/* User Block */}
+        <div className="flex items-center gap-2.5 px-2 py-1">
+          <div className="w-8 h-8 bg-blue-600 text-white flex items-center justify-center text-xs font-bold rounded-lg shadow-lg shadow-blue-500/15 border border-blue-500/25">
             {initials}
           </div>
-          <div className="text-left">
-            <div className="text-sm font-medium leading-tight max-w-[160px] truncate">{name}</div>
-            <div className="text-xs text-muted-foreground leading-tight">{role}</div>
+          <div className="text-left hidden md:block">
+            <div className="text-xs font-bold text-white leading-tight max-w-[120px] truncate">{name}</div>
+            <div className="text-[10px] text-slate-500 leading-tight mt-0.5">{role}</div>
           </div>
           <button
             onClick={signOut}
             title="Sign out"
-            className="ml-1 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded"
+            className="ml-1 p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/5 rounded-lg transition-all"
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -133,3 +148,4 @@ export default function TopBar() {
     </header>
   );
 }
+

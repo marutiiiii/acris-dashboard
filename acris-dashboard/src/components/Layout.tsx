@@ -10,7 +10,7 @@ export default function Layout() {
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
         <ModeBanner />
-        <main className="flex-1 p-6 overflow-auto bg-background">
+        <main className="flex-1 p-6 overflow-auto bg-[#03060f]">
           <Outlet />
         </main>
       </div>
