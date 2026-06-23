@@ -26,170 +26,174 @@ except Exception as e:
     logging.getLogger("uvicorn.error").warning(f"Schema creation failed or timed out: {e}")
 
 # Seed default data if DB is empty
-db = SessionLocal()
 try:
-    # Set a short lock timeout (5 seconds) to avoid hanging uvicorn startup if tables are locked
-    if db.bind.dialect.name == "postgresql":
-        try:
-            db.execute(text("SET lock_timeout = 5000"))
-            db.commit()
-        except Exception:
-            db.rollback()
-
-    # Dynamically ensure copilot_mode column exists in tables
-    for table in ["documents", "comparisons", "maps", "reports", "notifications"]:
-        try:
-            db.execute(text(f"ALTER TABLE {table} ADD COLUMN copilot_mode VARCHAR(50) DEFAULT 'beginner'"))
-            db.commit()
-            print(f"Added copilot_mode to {table}")
-        except Exception:
-            db.rollback()
-
-    # Dynamically ensure new regulation columns exist (SQLite/PostgreSQL compatible)
-    is_sqlite = db.bind.dialect.name == "sqlite"
-    for col, col_type in [
-        ("risk_level", "VARCHAR(50) DEFAULT 'Medium'"), 
-        ("obligations", "JSON DEFAULT '[]'" if is_sqlite else "JSONB DEFAULT '[]'::jsonb"), 
-        ("suggested_actions", "JSON DEFAULT '[]'" if is_sqlite else "JSONB DEFAULT '[]'::jsonb")
-    ]:
-        try:
-            db.execute(text(f"ALTER TABLE regulations ADD COLUMN {col} {col_type}"))
-            db.commit()
-            print(f"Added dynamic column {col} to regulations")
-        except Exception:
-            db.rollback()
-    
+    db = SessionLocal()
     try:
-        # Seed default roles
-        if db.query(Role).count() == 0:
-        default_roles = [
-            Role(name="Admin", description="Full system administrator access"),
-            Role(name="Compliance Officer", description="Manages compliance workflows"),
-            Role(name="Legal Officer", description="Legal review and advisory"),
-            Role(name="Auditor", description="Audit and readiness review"),
-            Role(name="Executive Viewer", description="Read-only executive dashboards"),
-        ]
-        db.add_all(default_roles)
-        db.commit()
+        # Set a short lock timeout (5 seconds) to avoid hanging uvicorn startup if tables are locked
+        if getattr(db.bind.dialect, "name", None) == "postgresql":
+            try:
+                db.execute(text("SET lock_timeout = 5000"))
+                db.commit()
+            except Exception:
+                db.rollback()
 
-    # Seed default demo user and organization
-    from app.models.models import Organization, User
-    import uuid
-    import hashlib
-    demo_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
-    
-    demo_org = db.query(Organization).filter(Organization.id == demo_id).first()
-    if not demo_org:
-        demo_org = Organization(
-            id=demo_id,
-            name="SafeBank India",
-            industry="Banking",
-            org_size="Enterprise",
-            departments=["Compliance", "Legal", "IT", "Cybersecurity", "Operations", "Audit", "Risk Management"],
-            services=["Retail Banking", "Corporate Banking", "Internet Banking", "Mobile Banking", "UPI", "Digital Payments", "Loans", "Credit Cards", "KYC Services"],
-            enabled_sources=["RBI", "NPCI", "FIU-IND", "CERT-In", "MeitY / DPDP"],
-            is_setup_complete=True
-        )
-        db.add(demo_org)
-        db.commit()
+        # Dynamically ensure copilot_mode column exists in tables
+        for table in ["documents", "comparisons", "maps", "reports", "notifications"]:
+            try:
+                db.execute(text(f"ALTER TABLE {table} ADD COLUMN copilot_mode VARCHAR(50) DEFAULT 'beginner'"))
+                db.commit()
+                print(f"Added copilot_mode to {table}")
+            except Exception:
+                db.rollback()
 
-    demo_user = db.query(User).filter(User.id == demo_id).first()
-    if not demo_user:
-        co_role = db.query(Role).filter(Role.name == "Compliance Officer").first()
-        demo_user = User(
-            id=demo_id,
-            organization_id=demo_org.id,
-            role_id=co_role.id if co_role else None,
-            full_name="Aarav Mehta",
-            email="demo@safebank.com",
-            password_hash=hashlib.sha256(b"demo123").hexdigest(),
-            status="Active"
-        )
-        db.add(demo_user)
-        db.commit()
+        # Dynamically ensure new regulation columns exist (SQLite/PostgreSQL compatible)
+        is_sqlite = getattr(db.bind.dialect, "name", None) == "sqlite"
+        for col, col_type in [
+            ("risk_level", "VARCHAR(50) DEFAULT 'Medium'"), 
+            ("obligations", "JSON DEFAULT '[]'" if is_sqlite else "JSONB DEFAULT '[]'::jsonb"), 
+            ("suggested_actions", "JSON DEFAULT '[]'" if is_sqlite else "JSONB DEFAULT '[]'::jsonb")
+        ]:
+            try:
+                db.execute(text(f"ALTER TABLE regulations ADD COLUMN {col} {col_type}"))
+                db.commit()
+                print(f"Added dynamic column {col} to regulations")
+            except Exception:
+                db.rollback()
+        
+        try:
+            # Seed default roles
+            if db.query(Role).count() == 0:
+                default_roles = [
+                    Role(name="Admin", description="Full system administrator access"),
+                    Role(name="Compliance Officer", description="Manages compliance workflows"),
+                    Role(name="Legal Officer", description="Legal review and advisory"),
+                    Role(name="Auditor", description="Audit and readiness review"),
+                    Role(name="Executive Viewer", description="Read-only executive dashboards"),
+                ]
+                db.add_all(default_roles)
+                db.commit()
 
-    # Seed default regulations
-    if db.query(Regulation).count() == 0:
-        seed_regs = [
-            Regulation(
-                source="RBI",
-                title="Master Direction on Digital Lending Guidelines",
-                date=datetime.strptime("2026-05-15", "%Y-%m-%d").date(),
-                link="https://rbi.org.in",
-                summary="Sets out mandatory disclosure norms for Digital Lending Apps (DLAs), First Loss Default Guarantee (FLDG) caps, and customer grievance mechanisms."
-            ),
-            Regulation(
-                source="RBI",
-                title="Master Direction on KYC (Amendment 2026)",
-                date=datetime.strptime("2026-04-08", "%Y-%m-%d").date(),
-                link="https://rbi.org.in",
-                summary="Shifts high-risk customer CDD from biennial to annual cadence; elevates V-CIP from permissive to preferred."
-            ),
-            Regulation(
-                source="SEBI",
-                title="LODR Amendment — Materiality Threshold",
-                date=datetime.strptime("2026-04-04", "%Y-%m-%d").date(),
-                link="https://sebi.gov.in",
-                summary="Lowers materiality threshold for event disclosures under Regulation 30, increasing the frequency of mandatory disclosures."
-            ),
-            Regulation(
-                source="NPCI",
-                title="UPI Transaction Limits and Risk Management Circular (2026)",
-                date=datetime.strptime("2026-05-20", "%Y-%m-%d").date(),
-                link="https://www.npci.org.in",
-                summary="Sets daily limits for high-risk accounts and establishes risk alerts for anomalous peer-to-peer payment velocities."
-            ),
-            Regulation(
-                source="NPCI",
-                title="Guidelines on UPI Lite and Offline Transaction Security",
-                date=datetime.strptime("2026-03-12", "%Y-%m-%d").date(),
-                link="https://www.npci.org.in",
-                summary="Upgrades transaction authentication and limit controls for offline wallets and UPI Lite services on mobile devices."
-            ),
-            Regulation(
-                source="CERT-In",
-                title="Cybersecurity Advisory on Ransomware Mitigations for Critical Financial Infrastructure",
-                date=datetime.strptime("2026-06-01", "%Y-%m-%d").date(),
-                link="https://www.cert-in.org.in",
-                summary="Mandates specific application controls, Java middleware updates, and strict 6-hour incident disclosure reporting windows."
-            ),
-            Regulation(
-                source="CERT-In",
-                title="Mandatory Information Security Practices and Log Retention Rules",
-                date=datetime.strptime("2026-02-18", "%Y-%m-%d").date(),
-                link="https://www.cert-in.org.in",
-                summary="Requires system logging for all user operations and mandates 180-day secure offsite retention of security logs."
-            ),
-            Regulation(
-                source="FIU-IND",
-                title="Anti-Money Laundering (AML) and Counter-Terrorism Financing (CFT) Reporting Guidelines",
-                date=datetime.strptime("2026-05-10", "%Y-%m-%d").date(),
-                link="https://fiuindia.gov.in",
-                summary="Clarifies red flag indicators for high-risk trading accounts and outlines structural formatting for Suspicious Transaction Reports (STRs)."
-            ),
-            Regulation(
-                source="MeitY / DPDP",
-                title="Digital Personal Data Protection (DPDP) Rules on Consent Management",
-                date=datetime.strptime("2026-06-15", "%Y-%m-%d").date(),
-                link="https://www.meity.gov.in",
-                summary="Outlines mandatory interfaces for consent withdrawability, user data erasure, and data principal grievance redressal."
-            ),
-            Regulation(
-                source="MeitY / DPDP",
-                title="Information Technology (Reasonable Security Practices and Procedures) Amendment",
-                date=datetime.strptime("2026-01-20", "%Y-%m-%d").date(),
-                link="https://www.meity.gov.in",
-                summary="Specifies data protection audits and independent certification requirements for organizations handling sensitive personal data."
-            )
-        ]
-        db.add_all(seed_regs)
-        db.commit()
-    except Exception as e:
-        import logging
-        logging.getLogger("uvicorn.error").warning(f"Database seeding failed: {e}")
-        db.rollback()
-finally:
-    db.close()
+            # Seed default demo user and organization
+            from app.models.models import Organization, User
+            import uuid
+            import hashlib
+            demo_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
+            
+            demo_org = db.query(Organization).filter(Organization.id == demo_id).first()
+            if not demo_org:
+                demo_org = Organization(
+                    id=demo_id,
+                    name="SafeBank India",
+                    industry="Banking",
+                    org_size="Enterprise",
+                    departments=["Compliance", "Legal", "IT", "Cybersecurity", "Operations", "Audit", "Risk Management"],
+                    services=["Retail Banking", "Corporate Banking", "Internet Banking", "Mobile Banking", "UPI", "Digital Payments", "Loans", "Credit Cards", "KYC Services"],
+                    enabled_sources=["RBI", "NPCI", "FIU-IND", "CERT-In", "MeitY / DPDP"],
+                    is_setup_complete=True
+                )
+                db.add(demo_org)
+                db.commit()
+
+            demo_user = db.query(User).filter(User.id == demo_id).first()
+            if not demo_user:
+                co_role = db.query(Role).filter(Role.name == "Compliance Officer").first()
+                demo_user = User(
+                    id=demo_id,
+                    organization_id=demo_org.id,
+                    role_id=co_role.id if co_role else None,
+                    full_name="Aarav Mehta",
+                    email="demo@safebank.com",
+                    password_hash=hashlib.sha256(b"demo123").hexdigest(),
+                    status="Active"
+                )
+                db.add(demo_user)
+                db.commit()
+
+            # Seed default regulations
+            if db.query(Regulation).count() == 0:
+                seed_regs = [
+                    Regulation(
+                        source="RBI",
+                        title="Master Direction on Digital Lending Guidelines",
+                        date=datetime.strptime("2026-05-15", "%Y-%m-%d").date(),
+                        link="https://rbi.org.in",
+                        summary="Sets out mandatory disclosure norms for Digital Lending Apps (DLAs), First Loss Default Guarantee (FLDG) caps, and customer grievance mechanisms."
+                    ),
+                    Regulation(
+                        source="RBI",
+                        title="Master Direction on KYC (Amendment 2026)",
+                        date=datetime.strptime("2026-04-08", "%Y-%m-%d").date(),
+                        link="https://rbi.org.in",
+                        summary="Shifts high-risk customer CDD from biennial to annual cadence; elevates V-CIP from permissive to preferred."
+                    ),
+                    Regulation(
+                        source="SEBI",
+                        title="LODR Amendment — Materiality Threshold",
+                        date=datetime.strptime("2026-04-04", "%Y-%m-%d").date(),
+                        link="https://sebi.gov.in",
+                        summary="Lowers materiality threshold for event disclosures under Regulation 30, increasing the frequency of mandatory disclosures."
+                    ),
+                    Regulation(
+                        source="NPCI",
+                        title="UPI Transaction Limits and Risk Management Circular (2026)",
+                        date=datetime.strptime("2026-05-20", "%Y-%m-%d").date(),
+                        link="https://www.npci.org.in",
+                        summary="Sets daily limits for high-risk accounts and establishes risk alerts for anomalous peer-to-peer payment velocities."
+                    ),
+                    Regulation(
+                        source="NPCI",
+                        title="Guidelines on UPI Lite and Offline Transaction Security",
+                        date=datetime.strptime("2026-03-12", "%Y-%m-%d").date(),
+                        link="https://www.npci.org.in",
+                        summary="Upgrades transaction authentication and limit controls for offline wallets and UPI Lite services on mobile devices."
+                    ),
+                    Regulation(
+                        source="CERT-In",
+                        title="Cybersecurity Advisory on Ransomware Mitigations for Critical Financial Infrastructure",
+                        date=datetime.strptime("2026-06-01", "%Y-%m-%d").date(),
+                        link="https://www.cert-in.org.in",
+                        summary="Mandates specific application controls, Java middleware updates, and strict 6-hour incident disclosure reporting windows."
+                    ),
+                    Regulation(
+                        source="CERT-In",
+                        title="Mandatory Information Security Practices and Log Retention Rules",
+                        date=datetime.strptime("2026-02-18", "%Y-%m-%d").date(),
+                        link="https://www.cert-in.org.in",
+                        summary="Requires system logging for all user operations and mandates 180-day secure offsite retention of security logs."
+                    ),
+                    Regulation(
+                        source="FIU-IND",
+                        title="Anti-Money Laundering (AML) and Counter-Terrorism Financing (CFT) Reporting Guidelines",
+                        date=datetime.strptime("2026-05-10", "%Y-%m-%d").date(),
+                        link="https://fiuindia.gov.in",
+                        summary="Clarifies red flag indicators for high-risk trading accounts and outlines structural formatting for Suspicious Transaction Reports (STRs)."
+                    ),
+                    Regulation(
+                        source="MeitY / DPDP",
+                        title="Digital Personal Data Protection (DPDP) Rules on Consent Management",
+                        date=datetime.strptime("2026-06-15", "%Y-%m-%d").date(),
+                        link="https://www.meity.gov.in",
+                        summary="Outlines mandatory interfaces for consent withdrawability, user data erasure, and data principal grievance redressal."
+                    ),
+                    Regulation(
+                        source="MeitY / DPDP",
+                        title="Information Technology (Reasonable Security Practices and Procedures) Amendment",
+                        date=datetime.strptime("2026-01-20", "%Y-%m-%d").date(),
+                        link="https://www.meity.gov.in",
+                        summary="Specifies data protection audits and independent certification requirements for organizations handling sensitive personal data."
+                    )
+                ]
+                db.add_all(seed_regs)
+                db.commit()
+        except Exception as e:
+            import logging
+            logging.getLogger("uvicorn.error").warning(f"Database seeding failed: {e}")
+            db.rollback()
+    finally:
+        db.close()
+except Exception as e:
+    import logging
+    logging.getLogger("uvicorn.error").warning(f"Database connection failed entirely during seed: {e}")
 
 # ─── Startup Health Checks ────────────────────────────────────────────────────
 import logging
@@ -342,11 +346,14 @@ def run_backfill_pipeline():
     finally:
         db.close()
 
-scraper_thread = threading.Thread(target=run_auto_scraper, name="AutoScraperThread", daemon=True)
-scraper_thread.start()
+try:
+    scraper_thread = threading.Thread(target=run_auto_scraper, name="AutoScraperThread", daemon=True)
+    scraper_thread.start()
 
-backfill_thread = threading.Thread(target=run_backfill_pipeline, name="BackfillThread", daemon=True)
-backfill_thread.start()
+    backfill_thread = threading.Thread(target=run_backfill_pipeline, name="BackfillThread", daemon=True)
+    backfill_thread.start()
+except Exception as e:
+    _startup_logger.warning(f"Could not start background threads (expected on serverless): {e}")
 
 if __name__ == "__main__":
     import uvicorn
