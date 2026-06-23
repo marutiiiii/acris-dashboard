@@ -58,8 +58,10 @@ try:
             print(f"Added dynamic column {col} to regulations")
         except Exception:
             db.rollback()
-    # Seed default roles
-    if db.query(Role).count() == 0:
+    
+    try:
+        # Seed default roles
+        if db.query(Role).count() == 0:
         default_roles = [
             Role(name="Admin", description="Full system administrator access"),
             Role(name="Compliance Officer", description="Manages compliance workflows"),
@@ -182,6 +184,10 @@ try:
         ]
         db.add_all(seed_regs)
         db.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger("uvicorn.error").warning(f"Database seeding failed: {e}")
+        db.rollback()
 finally:
     db.close()
 
@@ -209,9 +215,12 @@ except Exception as e:
     _startup_logger.warning(f"[Startup] Embeddings check failed: {e}")
 
 # Create storage directories locally on startup
-os.makedirs(os.path.join(settings.STORAGE_PATH, "documents"), exist_ok=True)
-os.makedirs(os.path.join(settings.STORAGE_PATH, "reports"), exist_ok=True)
-os.makedirs(os.path.join(settings.STORAGE_PATH, "evidence"), exist_ok=True)
+try:
+    os.makedirs(os.path.join(settings.STORAGE_PATH, "documents"), exist_ok=True)
+    os.makedirs(os.path.join(settings.STORAGE_PATH, "reports"), exist_ok=True)
+    os.makedirs(os.path.join(settings.STORAGE_PATH, "evidence"), exist_ok=True)
+except OSError as e:
+    _startup_logger.warning(f"[Startup] Could not create storage directories (likely a read-only filesystem like Vercel): {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
